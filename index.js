@@ -3,7 +3,7 @@ const cors = require('cors')
 const app = express()
 require('dotenv').config();
 const { MongoClient, ServerApiVersion } = require('mongodb');
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 5000;
 
 const uri = process.env.ZAP_SHIFT_USER_URL;
 
@@ -14,48 +14,58 @@ app.use(cors());
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  }
+    serverApi: {
+        version: ServerApiVersion.v1,
+        strict: true,
+        deprecationErrors: true,
+    }
 });
 
 async function run() {
-  try {
-    // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    try {
+        // Connect the client to the server	(optional starting in v4.7)
+        await client.connect();
 
-    const db = client.db('zap_shift_db');
-    const parcelCollection = db.collection('parcels');
+        const db = client.db('zap_shift_db');
+        const parcelsCollection = db.collection('parcels');
 
-    // parcel api
-    app.get('/parcels', async(req, res) =>{
-
-    })
-
-    app.post('/parcels', async(req, res) =>{
-        const parcel = req.body;
-        const result = await parcelCollection.insertOne(parcel)
-        res.send(result);
-    })
+        // parcel api
+        app.get('/parcels', async (req, res) => {
+            const query = {}
+            const { email } = req.query;
+            // /parcels?email=''&
+            if (email) {
+                query.senderEmail = email;
+            }
 
 
-    // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
-  } finally {
-    // Ensures that the client will close when you finish/error
-    // await client.close();
-  }
+            const cursor = parcelsCollection.find(query);
+            const result = await cursor.toArray();
+            res.send(result);
+        })
+
+        app.post('/parcels', async (req, res) => {
+            const parcel = req.body;
+            const result = await parcelsCollection.insertOne(parcel)
+            res.send(result);
+        })
+
+
+        // Send a ping to confirm a successful connection
+        await client.db("admin").command({ ping: 1 });
+        console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    } finally {
+        // Ensures that the client will close when you finish/error
+        // await client.close();
+    }
 }
 run().catch(console.dir);
 
 
 app.get('/', (req, res) => {
-  res.send('Zap shift Envorinment!')
+    res.send('Zap shift Envorinment!')
 })
 
 app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`)
+    console.log(`Example app listening on port ${port}`)
 })
